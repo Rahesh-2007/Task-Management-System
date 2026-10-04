@@ -25,7 +25,7 @@ export default function CallToActionSection() {
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            to="/app"
+            to="/signup"
             className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover active:bg-brand-active rounded-xl shadow-elevated hover:shadow-xl transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             <span className="relative z-10">Start for free</span>

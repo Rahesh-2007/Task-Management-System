@@ -13,8 +13,10 @@ import {
   Zap,
   ArrowRight,
 } from 'lucide-react';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 export default function Navbar() {
+  const { authUser } = useWorkspace() || {};
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -167,21 +169,33 @@ export default function Navbar() {
 
         {/* Right: Auth & CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/app"
-            className="px-3.5 py-2 text-sm font-medium text-todoist-text hover:text-neutral-900 hover:bg-black/5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand"
-          >
-            Log in
-          </Link>
+          {authUser ? (
+            <Link
+              to="/app"
+              className="relative group overflow-hidden px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover active:bg-brand-active rounded-lg transition-all shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand flex items-center gap-1.5"
+            >
+              <span>Open Workspace</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="px-3.5 py-2 text-sm font-medium text-todoist-text hover:text-neutral-900 hover:bg-black/5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                Log in
+              </Link>
 
-          <Link
-            to="/app"
-            className="relative group overflow-hidden px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover active:bg-brand-active rounded-lg transition-all shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 flex items-center gap-1.5"
-          >
-            <span className="relative z-10">Start for free</span>
-            <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
-          </Link>
+              <Link
+                to="/signup"
+                className="relative group overflow-hidden px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover active:bg-brand-active rounded-lg transition-all shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 flex items-center gap-1.5"
+              >
+                <span className="relative z-10">Start for free</span>
+                <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-0.5 transition-transform" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Toggle */}
@@ -244,20 +258,32 @@ export default function Navbar() {
               </a>
 
               <div className="pt-4 flex flex-col gap-2.5">
-                <Link
-                  to="/app"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-sm font-semibold text-neutral-800 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/app"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-3 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg shadow-sm"
-                >
-                  Start for free
-                </Link>
+                {authUser ? (
+                  <Link
+                    to="/app"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-3 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg shadow-sm"
+                  >
+                    Open Workspace
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full text-center py-2.5 text-sm font-semibold text-neutral-800 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full text-center py-3 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg shadow-sm"
+                    >
+                      Start for free
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

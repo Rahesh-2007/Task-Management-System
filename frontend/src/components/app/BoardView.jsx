@@ -17,13 +17,40 @@ export default function BoardView({ tasks, project }) {
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [isAddingSection, setIsAddingSection] = useState(false);
 
-  const projectSections = project
+  const projectSections = (project && sections.filter((s) => s.projectId === project.id).length > 0)
     ? sections.filter((s) => s.projectId === project.id)
     : [
         { id: 'sec_todo', name: 'To Do', order: 0 },
         { id: 'sec_progress', name: 'In Progress', order: 1 },
         { id: 'sec_done', name: 'Done', order: 2 },
       ];
+
+  const getTasksForSection = (sec, secIndex) => {
+    return (tasks || []).filter((t) => {
+      if (!t) return false;
+      if (t.sectionId === sec.id) return true;
+
+      const isDoneColumn = sec.id.toLowerCase().includes('done') || sec.name.toLowerCase() === 'done';
+      if (isDoneColumn) {
+        return t.completed || t.status === 'completed';
+      }
+
+      if (t.completed || t.status === 'completed') return false;
+
+      const isProgressColumn = sec.id.toLowerCase().includes('progress') || sec.name.toLowerCase().includes('progress');
+      if (isProgressColumn) {
+        return t.status === 'in_progress';
+      }
+
+      const isFirstColumn = secIndex === 0 || sec.id.toLowerCase().includes('todo') || sec.name.toLowerCase().includes('to do');
+      if (isFirstColumn) {
+        const matchesAnotherExplicitSection = projectSections.some((s) => s.id === t.sectionId);
+        return !matchesAnotherExplicitSection && t.status !== 'in_progress';
+      }
+
+      return false;
+    });
+  };
 
   const handleDragStart = (e, taskId) => {
     setDraggedTaskId(taskId);
@@ -38,9 +65,14 @@ export default function BoardView({ tasks, project }) {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
     if (taskId) {
+      const targetSec = projectSections.find((s) => s.id === targetSectionId);
+      const isDone = targetSectionId?.toLowerCase().includes('done') || targetSec?.name.toLowerCase() === 'done';
+      const isProgress = targetSectionId?.toLowerCase().includes('progress') || targetSec?.name.toLowerCase().includes('progress');
+
       updateTask(taskId, {
         sectionId: targetSectionId,
-        completed: targetSectionId?.includes('done') || false,
+        completed: isDone,
+        status: isDone ? 'completed' : isProgress ? 'in_progress' : 'todo',
       });
     }
     setDraggedTaskId(null);
@@ -48,9 +80,15 @@ export default function BoardView({ tasks, project }) {
 
   const handleAddColumnTask = (sectionId) => {
     if (!columnTaskInput.trim()) return;
+    const targetSec = projectSections.find((s) => s.id === sectionId);
+    const isDone = sectionId?.toLowerCase().includes('done') || targetSec?.name.toLowerCase() === 'done';
+    const isProgress = sectionId?.toLowerCase().includes('progress') || targetSec?.name.toLowerCase().includes('progress');
+
     addTask(columnTaskInput.trim(), {
       projectId: project ? project.id : 'proj_inbox',
       sectionId,
+      completed: isDone,
+      status: isDone ? 'completed' : isProgress ? 'in_progress' : 'todo',
     });
     setColumnTaskInput('');
     setActiveColumnAdd(null);
@@ -66,8 +104,8 @@ export default function BoardView({ tasks, project }) {
 
   return (
     <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 select-none items-start min-h-[500px]">
-      {projectSections.map((sec) => {
-        const columnTasks = tasks.filter((t) => t.sectionId === sec.id);
+      {projectSections.map((sec, secIndex) => {
+        const columnTasks = getTasksForSection(sec, secIndex);
 
         return (
           <div

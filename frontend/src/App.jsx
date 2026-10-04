@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { WorkspaceProvider, useWorkspace } from './context/WorkspaceContext';
+import MarketingPage from './pages/MarketingPage';
 import AuthPage from './pages/AuthPage';
 import AppPage from './pages/AppPage';
 import CreateWorkspacePage from './pages/CreateWorkspacePage';
@@ -14,21 +15,14 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function RootRoute() {
-  const { authUser } = useWorkspace();
-  if (!authUser) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Navigate to="/app" replace />;
-}
-
 export default function App() {
   return (
     <WorkspaceProvider>
       <Router>
         <Routes>
-          {/* Default entry point: direct to login */}
-          <Route path="/" element={<RootRoute />} />
+          {/* Landing / Marketing Website */}
+          <Route path="/" element={<MarketingPage />} />
+          <Route path="/marketing" element={<MarketingPage />} />
 
           {/* Login & Sign Up Page */}
           <Route path="/login" element={<AuthPage />} />

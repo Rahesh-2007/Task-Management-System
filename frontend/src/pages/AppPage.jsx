@@ -278,8 +278,8 @@ export default function AppPage() {
             </div>
           )}
 
-          {/* Workspace Title & Greeting */}
-          <div className="px-6 sm:px-8 pt-7 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Workspace Title & Greeting with View Switcher */}
+          <div className="px-6 sm:px-8 pt-7 pb-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
                 <span>{headerInfo.title}</span>
@@ -296,6 +296,35 @@ export default function AppPage() {
               <p className="text-xs text-neutral-500 font-medium mt-1">
                 {headerInfo.subtitle}
               </p>
+            </div>
+
+            {/* 5 View Mode Switcher Pills */}
+            <div className="flex items-center bg-white border border-neutral-200/90 p-1 rounded-2xl shadow-2xs self-start lg:self-auto overflow-x-auto">
+              {[
+                { id: 'list', label: 'List', icon: CheckSquare },
+                { id: 'board', label: 'Board', icon: LayoutGrid },
+                { id: 'calendar', label: 'Calendar', icon: CalendarDays },
+                { id: 'upcoming', label: 'Upcoming', icon: Clock },
+                { id: 'workload', label: 'Workload', icon: Users },
+              ].map((v) => {
+                const Icon = v.icon;
+                const isSelected = activeView === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setActiveView && setActiveView(v.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-[#E11D48] text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{v.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -522,7 +551,11 @@ export default function AppPage() {
 
           {/* Main Task View Body */}
           <div className="px-6 sm:px-8 pb-10">
-            <ListView tasks={filteredTasks} project={currentProject} />
+            {activeView === 'list' && <ListView tasks={filteredTasks} project={currentProject} />}
+            {activeView === 'board' && <BoardView tasks={filteredTasks} project={currentProject} />}
+            {activeView === 'calendar' && <CalendarView tasks={filteredTasks} project={currentProject} />}
+            {activeView === 'upcoming' && <UpcomingView tasks={filteredTasks} project={currentProject} />}
+            {activeView === 'workload' && <WorkloadView tasks={filteredTasks} />}
           </div>
         </main>
 

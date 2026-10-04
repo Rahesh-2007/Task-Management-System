@@ -29,6 +29,7 @@ export default function CalendarView({ tasks, project }) {
     setActiveTaskModal,
     addTask,
     setIsQuickAddOpen,
+    setSelectedCalendarDate,
   } = useWorkspace();
 
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -61,6 +62,9 @@ export default function CalendarView({ tasks, project }) {
   };
 
   const handleDayClick = (dateStr) => {
+    if (setSelectedCalendarDate) {
+      setSelectedCalendarDate(dateStr);
+    }
     if (setIsQuickAddOpen) {
       setIsQuickAddOpen(true);
     }

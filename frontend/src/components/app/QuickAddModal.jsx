@@ -23,6 +23,8 @@ export default function QuickAddModal() {
     members,
     activeFilter,
     currentUser,
+    selectedCalendarDate,
+    setSelectedCalendarDate,
   } = useWorkspace();
 
   const [inputTitle, setInputTitle] = useState('');
@@ -32,7 +34,13 @@ export default function QuickAddModal() {
   );
   const [selectedAssignee, setSelectedAssignee] = useState(() => currentUser?.id);
   const [selectedPriority, setSelectedPriority] = useState('p4');
-  const [selectedDueDate, setSelectedDueDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDueDate, setSelectedDueDate] = useState(() => selectedCalendarDate || format(new Date(), 'yyyy-MM-dd'));
+
+  React.useEffect(() => {
+    if (selectedCalendarDate) {
+      setSelectedDueDate(selectedCalendarDate);
+    }
+  }, [selectedCalendarDate, isQuickAddOpen]);
 
   const parsedPreview = useMemo(() => {
     if (!inputTitle.trim()) return null;
@@ -55,6 +63,7 @@ export default function QuickAddModal() {
 
     setInputTitle('');
     setDescription('');
+    if (setSelectedCalendarDate) setSelectedCalendarDate(null);
     setIsQuickAddOpen(false);
   };
 
@@ -167,6 +176,18 @@ export default function QuickAddModal() {
                   </option>
                 ))}
               </select>
+
+              {/* Due Date Picker */}
+              <div className="flex items-center gap-1 bg-neutral-100 border border-neutral-200 rounded-lg px-2 py-1">
+                <Calendar className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
+                <input
+                  type="date"
+                  value={selectedDueDate}
+                  onChange={(e) => setSelectedDueDate(e.target.value)}
+                  className="text-xs bg-transparent text-neutral-700 font-medium outline-none cursor-pointer"
+                  title="Due Date"
+                />
+              </div>
 
               {/* Priority Select */}
               <div className="flex items-center gap-0.5">
