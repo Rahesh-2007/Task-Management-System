@@ -9,11 +9,14 @@ import { Plus, Calendar, Clock } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import TaskCard from './TaskCard';
 
-export default function UpcomingView({ tasks, project }) {
+export default function UpcomingView({ tasks: propTasks, project }) {
   const {
+    tasks: wsTasks = [],
     updateTask,
     addTask,
   } = useWorkspace();
+
+  const tasks = propTasks || wsTasks || [];
 
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [inlineDayAdd, setInlineDayAdd] = useState(null);

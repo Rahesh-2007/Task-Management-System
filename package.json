@@ -1,20 +1,23 @@
 {
   "name": "task-management-system",
   "version": "1.0.0",
-  "description": "Dynamic Full-Stack Task Management System built with React, Node.js, Express, and MySQL",
+  "description": "Full-Stack Task Management System built with React, Node.js, Express, and MySQL",
   "scripts": {
     "server": "node backend/server.js",
-    "client": "npm.cmd --prefix frontend run dev",
-    "install:all": "npm.cmd --prefix backend install && npm.cmd --prefix frontend install",
-    "build": "npm.cmd --prefix frontend run build",
-    "test": "npm.cmd --prefix frontend run test -- --run"
+    "client": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "test:frontend": "npm --prefix frontend test",
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "build": "npm --prefix frontend run build"
   },
   "keywords": [
+    "taskflow",
     "task-manager",
     "react",
     "nodejs",
     "mysql",
-    "drag-and-drop",
     "kanban"
   ],
   "author": "",

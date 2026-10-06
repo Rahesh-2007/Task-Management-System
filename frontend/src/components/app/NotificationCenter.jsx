@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X,
   Bell,
@@ -13,11 +14,14 @@ import {
   UserPlus,
   Building2,
   Check,
+  Video,
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { notificationApi } from '../../api/apiClient';
 import { format } from 'date-fns';
 
 export default function NotificationCenter() {
+  const navigate = useNavigate();
   const {
     isNotificationsOpen,
     setIsNotificationsOpen,
@@ -31,6 +35,8 @@ export default function NotificationCenter() {
     acceptWorkspaceInvitation,
     declineWorkspaceInvitation,
     workspaces,
+    notifications = [],
+    refreshWorkspaceData,
   } = useWorkspace();
 
   if (!isNotificationsOpen) return null;
@@ -60,33 +66,99 @@ export default function NotificationCenter() {
       inv.email?.toLowerCase() === currentUser?.email?.toLowerCase()
   );
 
+  const handleNotificationClick = async (notif) => {
+    try {
+      await notificationApi.markAsRead(notif.id);
+      if (refreshWorkspaceData) refreshWorkspaceData();
+    } catch (_) {}
+
+    setIsNotificationsOpen(false);
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      if (refreshWorkspaceData) refreshWorkspaceData();
+    } catch (_) {}
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 bg-black/20 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 bg-black/20 backdrop-blur-xs animate-fade-in"
       onClick={() => setIsNotificationsOpen(false)}
     >
       <div
-        className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden mt-12 animate-slide-up"
+        className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden mt-12 animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100 bg-cream-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 bg-neutral-50">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-brand" />
+            <Bell className="w-4 h-4 text-[#E11D48]" />
             <h3 className="text-xs font-bold text-neutral-900">Notification Center</h3>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsNotificationsOpen(false)}
-            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {notifications.some((n) => !n.is_read) && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                className="text-[10px] font-bold text-[#E11D48] hover:underline cursor-pointer"
+              >
+                Mark all read
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsNotificationsOpen(false)}
+              className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="max-h-96 overflow-y-auto p-4 space-y-4">
+        <div className="max-h-[75vh] overflow-y-auto p-4 space-y-4">
+          {/* Section: Live Meeting Announcements & System Alerts */}
+          {notifications.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                Team Updates ({notifications.length})
+              </div>
+              <div className="space-y-2">
+                {notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                      notif.is_read
+                        ? 'bg-neutral-50 border-neutral-200/80 opacity-75'
+                        : 'bg-rose-50/70 border-rose-200 shadow-2xs'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-neutral-900">
+                        <Video className="w-3.5 h-3.5 text-[#E11D48]" />
+                        <span>{notif.title}</span>
+                      </div>
+                      {!notif.is_read && (
+                        <span className="w-2 h-2 rounded-full bg-[#E11D48] flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-neutral-600 leading-snug">{notif.message}</p>
+                    <div className="flex items-center justify-end text-[10px] text-[#E11D48] font-bold pt-1">
+                      <span>View & Join →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Join Requests requiring Creator Approval */}
           {pendingApprovalsForMe.length > 0 && (
-            <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2.5">
+            <div className="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200 space-y-2.5">
               <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
                 <UserCheck className="w-4 h-4 text-amber-600 flex-shrink-0" />
                 <span>Join Requests ({pendingApprovalsForMe.length})</span>
@@ -96,21 +168,19 @@ export default function NotificationCenter() {
               </p>
               <div className="space-y-2">
                 {pendingApprovalsForMe.map((req) => (
-                  <div key={req.id} className="p-2.5 bg-white rounded-lg border border-amber-200/80 shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="truncate">
-                        <div className="font-bold text-xs text-neutral-900 truncate">
-                          {req.requesterName || (req.email ? req.email.split('@')[0] : 'User')}
-                        </div>
-                        <div className="text-[10px] text-neutral-500 truncate">{req.email}</div>
-                        <div className="text-[10px] text-amber-700 font-medium">To: {req.workspaceName}</div>
+                  <div key={req.id} className="p-2.5 bg-white rounded-xl border border-amber-200/80 shadow-2xs space-y-2">
+                    <div className="truncate">
+                      <div className="font-bold text-xs text-neutral-900 truncate">
+                        {req.requesterName || (req.email ? req.email.split('@')[0] : 'User')}
                       </div>
+                      <div className="text-[10px] text-neutral-500 truncate">{req.email}</div>
+                      <div className="text-[10px] text-amber-700 font-medium">To: {req.workspaceName}</div>
                     </div>
                     <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
                       <button
                         type="button"
                         onClick={() => approveJoinRequest(req.id)}
-                        className="flex-1 py-1 px-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        className="flex-1 py-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                       >
                         <Check className="w-3 h-3" />
                         <span>Approve</span>
@@ -118,7 +188,7 @@ export default function NotificationCenter() {
                       <button
                         type="button"
                         onClick={() => rejectJoinRequest(req.id)}
-                        className="py-1 px-2 rounded-md border border-neutral-200 hover:bg-neutral-100 text-neutral-600 text-[11px] font-semibold transition-colors cursor-pointer"
+                        className="py-1 px-2 rounded-lg border border-neutral-200 hover:bg-neutral-100 text-neutral-600 text-[11px] font-semibold transition-colors cursor-pointer"
                       >
                         Reject
                       </button>
@@ -129,9 +199,9 @@ export default function NotificationCenter() {
             </div>
           )}
 
-          {/* Section 2: Direct Workspace Invitations requiring Member Acceptance */}
+          {/* Section 2: Direct Workspace Invitations */}
           {myPendingDirectInvites.length > 0 && (
-            <div className="p-3.5 bg-rose-50/80 rounded-xl border border-rose-200 space-y-2.5">
+            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 space-y-2.5">
               <div className="flex items-center gap-2 text-[#E11D48] font-bold text-xs">
                 <Building2 className="w-4 h-4 text-[#E11D48] flex-shrink-0" />
                 <span>Workspace Invitations ({myPendingDirectInvites.length})</span>
@@ -141,7 +211,7 @@ export default function NotificationCenter() {
               </p>
               <div className="space-y-2">
                 {myPendingDirectInvites.map((inv) => (
-                  <div key={inv.id} className="p-2.5 bg-white rounded-lg border border-rose-200/80 shadow-2xs space-y-2">
+                  <div key={inv.id} className="p-2.5 bg-white rounded-xl border border-rose-200/80 shadow-2xs space-y-2">
                     <div>
                       <div className="font-bold text-xs text-neutral-900">{inv.workspaceName}</div>
                       <div className="text-[10px] text-neutral-500">Invited by: {inv.inviterName || 'Workspace Admin'}</div>
@@ -150,7 +220,7 @@ export default function NotificationCenter() {
                       <button
                         type="button"
                         onClick={() => acceptWorkspaceInvitation(inv.id)}
-                        className="flex-1 py-1 px-2 rounded-md bg-[#E11D48] hover:bg-[#BE123C] text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        className="flex-1 py-1 px-2 rounded-lg bg-[#E11D48] hover:bg-[#BE123C] text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                       >
                         <Check className="w-3 h-3" />
                         <span>Accept & Join</span>
@@ -158,7 +228,7 @@ export default function NotificationCenter() {
                       <button
                         type="button"
                         onClick={() => declineWorkspaceInvitation(inv.id)}
-                        className="py-1 px-2 rounded-md border border-neutral-200 hover:bg-neutral-100 text-neutral-600 text-[11px] font-semibold transition-colors cursor-pointer"
+                        className="py-1 px-2 rounded-lg border border-neutral-200 hover:bg-neutral-100 text-neutral-600 text-[11px] font-semibold transition-colors cursor-pointer"
                       >
                         Decline
                       </button>
@@ -171,18 +241,18 @@ export default function NotificationCenter() {
 
           {/* Overdue Alert Banner */}
           {overdueTasks.length > 0 && (
-            <div className="p-3.5 bg-red-50 rounded-xl border border-brand-border space-y-2">
+            <div className="p-3.5 bg-red-50 rounded-2xl border border-red-200 space-y-2">
               <div className="flex items-center gap-2 text-red-800 font-bold text-xs">
-                <AlertCircle className="w-4 h-4 text-brand flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 text-[#E11D48] flex-shrink-0" />
                 <span>{overdueTasks.length} Overdue {overdueTasks.length === 1 ? 'Task' : 'Tasks'}</span>
               </div>
               <p className="text-[11px] text-neutral-600 leading-snug">
-                You have tasks whose due date has passed. Keep your momentum going!
+                You have tasks whose due date has passed.
               </p>
               <button
                 type="button"
                 onClick={() => handleBulkRescheduleOverdue()}
-                className="w-full py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
+                className="w-full py-1.5 bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
               >
                 Reschedule all to Today
               </button>

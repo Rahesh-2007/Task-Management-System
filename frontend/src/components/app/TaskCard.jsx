@@ -15,6 +15,7 @@ import {
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { formatFriendlyDueDate } from '../../utils/nlpParser';
 import { getQuickRescheduleOptions } from '../../utils/rescheduleLogic';
+import Avatar from './Avatar';
 
 export default function TaskCard({ task, isDragging = false }) {
   const {
@@ -32,7 +33,7 @@ export default function TaskCard({ task, isDragging = false }) {
   const safeProjects = projects || [];
   const assignee = safeMembers.find((m) => m.id === task?.assigneeId);
   const project = safeProjects.find((p) => p.id === task?.projectId);
-  const friendlyDate = formatFriendlyDueDate(task?.dueDate, task?.dueTime);
+  const friendlyDate = formatFriendlyDueDate(task?.dueDate, task?.dueTime, task?.startTime);
 
   const priorityStyles = {
     p1: { border: 'border-priority-p1', text: 'text-priority-p1', flag: 'text-priority-p1' },
@@ -179,11 +180,12 @@ export default function TaskCard({ task, isDragging = false }) {
 
             {/* Assignee Avatar (Far Right) */}
             {assignee && (
-              <div className="ml-auto flex items-center gap-1" title={`Assigned to ${assignee.name}`}>
-                <img
-                  src={assignee.avatar}
-                  alt={assignee.name}
-                  className="w-5 h-5 min-w-[20px] max-w-[20px] min-h-[20px] max-h-[20px] rounded-full object-cover border border-white shadow-xs"
+              <div className="ml-auto flex items-center gap-1">
+                <Avatar
+                  user={assignee}
+                  size="xs"
+                  className="border border-white shadow-xs"
+                  title={`Assigned to ${assignee.name}`}
                 />
               </div>
             )}

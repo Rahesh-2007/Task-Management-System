@@ -166,7 +166,7 @@ export function computeNextRecurrenceDate(currentDate = new Date(), recurrenceRu
 /**
  * Format a due date nicely for Todoist UI (Today, Tomorrow, Yesterday, Monday, Oct 12, etc.)
  */
-export function formatFriendlyDueDate(dateStr, timeStr = null) {
+export function formatFriendlyDueDate(dateStr, dueTimeStr = null, startTimeStr = null) {
   if (!dateStr) return null;
   try {
     const date = parseISO(dateStr);
@@ -190,8 +190,12 @@ export function formatFriendlyDueDate(dateStr, timeStr = null) {
       }
     }
 
-    if (timeStr) {
-      label += ` ${timeStr}`;
+    if (startTimeStr && dueTimeStr) {
+      label += ` (${startTimeStr} - ${dueTimeStr})`;
+    } else if (startTimeStr) {
+      label += ` @ ${startTimeStr}`;
+    } else if (dueTimeStr) {
+      label += ` ${dueTimeStr}`;
     }
 
     return { label, isOverdue };

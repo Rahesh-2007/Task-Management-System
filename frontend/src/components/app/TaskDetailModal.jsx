@@ -20,6 +20,7 @@ import {
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { parseTaskInput, formatFriendlyDueDate } from '../../utils/nlpParser';
 import { getQuickRescheduleOptions } from '../../utils/rescheduleLogic';
+import Avatar from './Avatar';
 
 export default function TaskDetailModal() {
   const {
@@ -33,7 +34,10 @@ export default function TaskDetailModal() {
     sections,
     addComment,
     activities,
+    activeWorkspace,
   } = useWorkspace();
+
+  const isPersonal = activeWorkspace?.type === 'personal';
 
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'comments' | 'activity'
   const [commentInput, setCommentInput] = useState('');
@@ -323,23 +327,25 @@ export default function TaskDetailModal() {
 
               {/* Right Column: Metadata Properties (Assignee, Due Date, Priority, Project, Labels) */}
               <div className="md:col-span-4 space-y-4 bg-cream-50/60 p-4 rounded-2xl border border-neutral-200/80">
-                {/* Assignee Picker */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">
-                    Assignee
-                  </label>
-                  <select
-                    value={task.assigneeId || ''}
-                    onChange={(e) => updateTask(task.id, { assigneeId: e.target.value })}
-                    className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
-                  >
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} ({m.title})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Assignee Picker (Company Workspace only) */}
+                {!isPersonal && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">
+                      Assignee
+                    </label>
+                    <select
+                      value={task.assigneeId || ''}
+                      onChange={(e) => updateTask(task.id, { assigneeId: e.target.value })}
+                      className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                    >
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.title})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Due Date & Natural Language input */}
                 <div className="space-y-1.5">
@@ -374,19 +380,33 @@ export default function TaskDetailModal() {
                       </button>
                     </form>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="space-y-2">
                       <input
                         type="date"
                         value={task.dueDate || ''}
                         onChange={(e) => updateTask(task.id, { dueDate: e.target.value })}
-                        className="flex-1 text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                        className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
                       />
-                      <input
-                        type="time"
-                        value={task.dueTime || ''}
-                        onChange={(e) => updateTask(task.id, { dueTime: e.target.value })}
-                        className="w-24 text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-neutral-500 font-bold block mb-0.5">Start Time</label>
+                          <input
+                            type="time"
+                            value={task.startTime || ''}
+                            onChange={(e) => updateTask(task.id, { startTime: e.target.value || null })}
+                            className="w-full text-xs p-1.5 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-neutral-500 font-bold block mb-0.5">Due Time</label>
+                          <input
+                            type="time"
+                            value={task.dueTime || ''}
+                            onChange={(e) => updateTask(task.id, { dueTime: e.target.value || null })}
+                            className="w-full text-xs p-1.5 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -445,56 +465,40 @@ export default function TaskDetailModal() {
                   </div>
                 </div>
 
-                {/* Project & Section Selector */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">
-                    Project & Section
-                  </label>
-                  <select
-                    value={task.projectId || ''}
-                    onChange={(e) => updateTask(task.id, { projectId: e.target.value, sectionId: null })}
-                    className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand mb-1.5"
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  {projectSections.length > 0 && (
+                {/* Project & Section Selector (Company Workspace only) */}
+                {!isPersonal && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">
+                      Project & Section
+                    </label>
                     <select
-                      value={task.sectionId || ''}
-                      onChange={(e) => updateTask(task.id, { sectionId: e.target.value || null })}
-                      className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                      value={task.projectId || ''}
+                      onChange={(e) => updateTask(task.id, { projectId: e.target.value, sectionId: null })}
+                      className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand mb-1.5"
                     >
-                      <option value="">No Section</option>
-                      {projectSections.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
                         </option>
                       ))}
                     </select>
-                  )}
-                </div>
 
-                {/* Assignee Selector */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block">
-                    Assignee
-                  </label>
-                  <select
-                    value={task.assigneeId || currentUser?.id}
-                    onChange={(e) => updateTask(task.id, { assigneeId: e.target.value })}
-                    className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
-                  >
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        👤 {m.name} ({m.role}) {m.id === currentUser?.id ? '— (You)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {projectSections.length > 0 && (
+                      <select
+                        value={task.sectionId || ''}
+                        onChange={(e) => updateTask(task.id, { sectionId: e.target.value || null })}
+                        className="w-full text-xs p-2 rounded-lg bg-white border border-neutral-200 text-neutral-800 font-medium outline-none focus:border-brand"
+                      >
+                        <option value="">No Section</option>
+                        {projectSections.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
 
                 {/* Labels & Tags */}
                 <div className="space-y-1.5">
@@ -553,14 +557,14 @@ export default function TaskDetailModal() {
                     const author = members.find((m) => m.id === comment.authorId) || currentUser;
                     return (
                       <div key={comment.id} className="flex items-start gap-3 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                        <img
-                          src={author.avatar}
-                          alt={author.name}
-                          className="w-7 h-7 rounded-full object-cover"
+                        <Avatar
+                          user={author}
+                          size="sm"
+                          className="shadow-2xs"
                         />
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-neutral-900">{author.name}</span>
+                            <span className="text-xs font-bold text-neutral-900">{author?.name || 'Teammate'}</span>
                             <span className="text-[10px] text-neutral-400">{comment.timestamp}</span>
                           </div>
                           <p className="text-xs text-neutral-700 leading-relaxed whitespace-pre-wrap">
@@ -613,9 +617,9 @@ export default function TaskDetailModal() {
                   const actor = members.find((m) => m.id === act.actorId) || currentUser;
                   return (
                     <div key={act.id} className="flex items-center gap-3 text-xs p-2.5 rounded-lg bg-neutral-50">
-                      <img src={actor.avatar} alt={actor.name} className="w-5 h-5 rounded-full object-cover" />
+                      <Avatar user={actor} size="xs" />
                       <div className="flex-1">
-                        <strong className="text-neutral-900">{actor.name}</strong>{' '}
+                        <strong className="text-neutral-900">{actor?.name || 'Teammate'}</strong>{' '}
                         <span className="text-neutral-600">{act.action}</span>{' '}
                         <span className="font-semibold text-neutral-800">"{act.taskTitle}"</span>
                       </div>

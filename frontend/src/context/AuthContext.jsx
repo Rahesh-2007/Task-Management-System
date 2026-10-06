@@ -1,93 +1,115 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../api/authApi';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { authApi, getToken, setToken, clearToken } from '../api/apiClient';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [workspaces, setWorkspaces] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // On mount, restore session from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('taskflow_user');
-    const storedWs = localStorage.getItem('taskflow_workspaces');
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-        if (storedWs) setWorkspaces(JSON.parse(storedWs));
-      } catch (_) {
-        localStorage.removeItem('taskflow_user');
-        localStorage.removeItem('taskflow_workspaces');
-      }
+  // Restore session on mount via /api/auth/me
+  const restoreSession = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setUser(null);
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      setIsLoading(true);
+      const res = await authApi.getMe();
+      if (res.success && res.data?.user) {
+        setUser(res.data.user);
+      } else {
+        clearToken();
+        setUser(null);
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Session restore failed:', err.message);
+      clearToken();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = async (email, password) => {
-    const data = await authApi.login(email, password);
-    setUser(data.user);
-    setWorkspaces(data.workspaces || []);
-    localStorage.setItem('taskflow_user', JSON.stringify(data.user));
-    localStorage.setItem('taskflow_workspaces', JSON.stringify(data.workspaces || []));
-    return data;
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  const login = async (email, password, remember = true) => {
+    setError(null);
+    try {
+      const res = await authApi.login(email, password);
+      if (res.success && res.data) {
+        setToken(res.data.token, remember);
+        setUser(res.data.user);
+        return { success: true, user: res.data.user, workspaces: res.data.workspaces };
+      }
+      throw new Error(res.message || 'Login failed');
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   const register = async (name, email, password) => {
-    const data = await authApi.register({ name, email, password });
-    // After register, log in
-    return login(email, password);
+    setError(null);
+    try {
+      const res = await authApi.register({ name, email, password });
+      if (res.success && res.data) {
+        setToken(res.data.token, true);
+        setUser(res.data.user);
+        return { success: true, user: res.data.user, workspaces: res.data.workspaces };
+      }
+      throw new Error(res.message || 'Registration failed');
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   const logout = () => {
+    clearToken();
     setUser(null);
-    setWorkspaces([]);
-    localStorage.removeItem('taskflow_user');
-    localStorage.removeItem('taskflow_workspaces');
-    localStorage.removeItem('taskflow_current_workspace');
+    window.location.href = '/login';
   };
 
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
-    localStorage.setItem('taskflow_user', JSON.stringify(updatedUser));
-  };
-
-  const addWorkspace = (ws) => {
-    const updated = [...workspaces, ws];
-    setWorkspaces(updated);
-    localStorage.setItem('taskflow_workspaces', JSON.stringify(updated));
-  };
-
-  const refreshWorkspaces = async () => {
-    if (!user) return;
-    try {
-      const data = await authApi.getMe(user.id);
-      setWorkspaces(data.workspaces || []);
-      localStorage.setItem('taskflow_workspaces', JSON.stringify(data.workspaces || []));
-      return data.workspaces;
-    } catch (_) {}
+  const updateProfile = async (data) => {
+    const res = await authApi.updateProfile(data);
+    if (res.success && res.data) {
+      setUser(res.data);
+    }
+    return res;
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      workspaces,
-      isLoading,
-      isAuthenticated: !!user,
-      login,
-      register,
-      logout,
-      updateUser,
-      addWorkspace,
-      refreshWorkspaces,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        authUser: user,
+        currentUser: user,
+        isAuthenticated: Boolean(user),
+        isLoading,
+        error,
+        login,
+        register,
+        logout,
+        updateProfile,
+        refreshSession: restoreSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

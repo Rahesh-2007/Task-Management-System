@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
+import { workspaceApi } from '../api/apiClient';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -30,7 +31,7 @@ const COLOR_OPTIONS = [
 
 export default function CreateWorkspacePage() {
   const navigate = useNavigate();
-  const { createNewWorkspace, currentUser } = useWorkspace();
+  const { createWorkspace, currentUser } = useWorkspace();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -109,23 +110,20 @@ export default function CreateWorkspacePage() {
     setIsSubmitting(true);
 
     try {
-      const result = await createNewWorkspace(name.trim(), finalInvites, {
-        description: description.trim(),
-        color: selectedColor,
-        icon: 'building',
-      });
-
-      if (result.success) {
-        setCreatedSuccess(true);
-        setTimeout(() => {
-          navigate('/app');
-        }, 800);
-      } else {
-        setGeneralError(result.message || 'Failed to create workspace. Please try again.');
-        setIsSubmitting(false);
+      const ws = await createWorkspace(name.trim(), 'company');
+      if (ws?.id && finalInvites.length > 0) {
+        for (const invEmail of finalInvites) {
+          try {
+            await workspaceApi.inviteMember(ws.id, invEmail);
+          } catch (_) {}
+        }
       }
+      setCreatedSuccess(true);
+      setTimeout(() => {
+        navigate('/app/today');
+      }, 500);
     } catch (err) {
-      setGeneralError(err.message || 'An unexpected error occurred.');
+      setGeneralError(err.message || 'Failed to create workspace.');
       setIsSubmitting(false);
     }
   };

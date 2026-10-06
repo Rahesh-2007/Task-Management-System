@@ -1,10 +1,58 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import { format, addDays, isToday } from 'date-fns';
-import { Users, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Users, AlertTriangle, CheckCircle2, ShieldAlert, Building2 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import Avatar from './Avatar';
 
-export default function WorkloadView({ tasks }) {
-  const { members, setActiveTaskModal, updateTask } = useWorkspace();
+export default function WorkloadView({ tasks: propTasks }) {
+  const { tasks: wsTasks = [], members, setActiveTaskModal, updateTask, activeWorkspace, workspaces = [], switchWorkspace } = useWorkspace();
+  const tasks = propTasks || wsTasks || [];
+
+  const isPersonal = activeWorkspace?.type === 'personal';
+  const companyWorkspaces = workspaces.filter((w) => w.type === 'company');
+
+  if (isPersonal) {
+    return (
+      <div className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm text-center max-w-2xl mx-auto my-12 space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-[#E11D48] flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-neutral-900">
+          Team Workload is for Company Workspaces
+        </h2>
+        <p className="text-xs text-neutral-600 max-w-md mx-auto leading-relaxed">
+          The Team Workload matrix helps distribute and monitor task capacity across team collaborators in company workspaces.
+        </p>
+
+        {companyWorkspaces.length > 0 ? (
+          <div className="pt-2">
+            <span className="text-xs font-bold text-neutral-500 block mb-2">Switch to a company workspace:</span>
+            <div className="flex flex-wrap justify-center gap-2">
+              {companyWorkspaces.map((ws) => (
+                <button
+                  key={ws.id}
+                  type="button"
+                  onClick={() => switchWorkspace(ws.id)}
+                  className="px-4 py-2 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold shadow-2xs cursor-pointer transition-all"
+                >
+                  Switch to {ws.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="pt-2">
+            <Link
+              to="/workspaces/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold shadow-2xs"
+            >
+              Create Company Workspace
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const today = new Date();
   const days = Array.from({ length: 5 }, (_, i) => addDays(today, i));
@@ -55,22 +103,29 @@ export default function WorkloadView({ tasks }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 text-xs">
-            {(members || []).map((member) => {
-              const memberTasks = (tasks || []).filter((t) => t.assigneeId === member.id && !t.completed);
+            {(!members || members.length === 0) ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-neutral-400 font-medium">
+                  No members found in this workspace. Invite collaborators to monitor team workload.
+                </td>
+              </tr>
+            ) : (
+              members.map((member) => {
+                const memberTasks = (tasks || []).filter((t) => t.assigneeId === member.id && !t.completed);
 
-              return (
-                <tr key={member.id} className="hover:bg-neutral-50/70 transition-colors">
+                return (
+                  <tr key={member.id} className="hover:bg-neutral-50/70 transition-colors">
                   {/* Member Profile */}
                   <td className="py-4 px-3">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-9 h-9 rounded-full object-cover ring-1 ring-neutral-200"
+                      <Avatar
+                        user={member}
+                        size="lg"
+                        className="ring-1 ring-neutral-200 shadow-2xs"
                       />
                       <div>
                         <div className="font-bold text-neutral-900">{member.name}</div>
-                        <div className="text-[11px] text-neutral-500">{member.title}</div>
+                        <div className="text-[11px] text-neutral-500">{member.title || member.email}</div>
                       </div>
                     </div>
                   </td>
@@ -129,7 +184,7 @@ export default function WorkloadView({ tasks }) {
                   })}
                 </tr>
               );
-            })}
+            }))}
           </tbody>
         </table>
       </div>

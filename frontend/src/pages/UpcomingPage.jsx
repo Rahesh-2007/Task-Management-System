@@ -1,13 +1,10 @@
 import React from 'react';
-import TasksView from '../components/TasksView';
+import UpcomingView from '../components/app/UpcomingView';
 
 export default function UpcomingPage() {
   return (
-    <TasksView 
-      pageTitle="Upcoming" 
-      taskParams={{ due_filter: 'upcoming' }} 
-      emptyMessage="No upcoming tasks scheduled"
-      emptySubMessage="Plan ahead by setting due dates on your tasks."
-    />
+    <div className="space-y-6 animate-fade-in">
+      <UpcomingView />
+    </div>
   );
 }

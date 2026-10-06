@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import TaskCard from './TaskCard';
+import Avatar from './Avatar';
 import { format, parseISO, isPast, isToday, isFuture } from 'date-fns';
 
 export default function ListView({ tasks = [], project }) {
@@ -120,7 +121,6 @@ export default function ListView({ tasks = [], project }) {
     const projBadge = getProjectBadge(task.projectId, task.labels);
     const prioBadge = getPriorityBadge(task.priority);
     const assignee = safeMembers.find((m) => m && m.id === task.assigneeId) || safeMembers[0];
-    const avatarUrl = assignee?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
     return (
       <div
@@ -176,10 +176,10 @@ export default function ListView({ tasks = [], project }) {
             <span>{formatTaskDate(task.dueDate)}</span>
           </div>
 
-          <img
-            src={avatarUrl}
-            alt={assignee?.name || 'Assignee'}
-            className="w-6 h-6 rounded-full object-cover border border-neutral-200 shadow-2xs"
+          <Avatar
+            user={assignee}
+            size="sm"
+            className="border border-neutral-200 shadow-2xs"
           />
         </div>
       </div>

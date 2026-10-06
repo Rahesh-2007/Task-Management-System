@@ -22,8 +22,9 @@ import {
 } from 'date-fns';
 import { useWorkspace } from '../../context/WorkspaceContext';
 
-export default function CalendarView({ tasks, project }) {
+export default function CalendarView({ tasks: propTasks, project }) {
   const {
+    tasks: wsTasks = [],
     projects,
     updateTask,
     setActiveTaskModal,
@@ -36,7 +37,7 @@ export default function CalendarView({ tasks, project }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
 
   const safeProjects = projects || [];
-  const safeTasks = tasks || [];
+  const safeTasks = propTasks || wsTasks || [];
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);

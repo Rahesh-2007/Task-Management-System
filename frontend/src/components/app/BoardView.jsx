@@ -3,13 +3,16 @@ import { Plus, MoreHorizontal, Check, Clock } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import TaskCard from './TaskCard';
 
-export default function BoardView({ tasks, project }) {
+export default function BoardView({ tasks: propTasks, project }) {
   const {
+    tasks: wsTasks = [],
     sections,
     updateTask,
     addTask,
     addSection,
   } = useWorkspace();
+
+  const tasks = propTasks || wsTasks || [];
 
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [activeColumnAdd, setActiveColumnAdd] = useState(null);

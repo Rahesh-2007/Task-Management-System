@@ -14,13 +14,18 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 
 export default function ReportsModal({ isOpen, onClose }) {
   const {
+    isReportsModalOpen,
+    setIsReportsModalOpen,
     tasks = [],
     projects = [],
     members = [],
-    activeWs,
+    activeWorkspace,
   } = useWorkspace();
 
-  if (!isOpen) return null;
+  const modalOpen = isOpen !== undefined ? isOpen : isReportsModalOpen;
+  const handleClose = onClose || (() => setIsReportsModalOpen(false));
+
+  if (!modalOpen) return null;
 
   const safeTasks = tasks || [];
   const safeProjects = projects || [];
@@ -47,14 +52,14 @@ export default function ReportsModal({ isOpen, onClose }) {
                 Workspace Reports & Productivity
               </h3>
               <p className="text-xs text-neutral-500">
-                Analytics for {activeWs?.name || 'My Workspace'}
+                Analytics for {activeWorkspace?.name || 'My Workspace'}
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-xl text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />

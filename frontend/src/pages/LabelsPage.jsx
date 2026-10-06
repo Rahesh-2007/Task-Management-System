@@ -1,199 +1,131 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { useWorkspace } from '../context/WorkspaceContext';
-import { useAuth } from '../context/AuthContext';
-import { createLabelApi } from '../api/resourceApis';
-import TasksView from '../components/TasksView';
-import { Tag, Plus, Trash2, Edit3, X, Check } from 'lucide-react';
+import ListView from '../components/app/ListView';
+import { Tag, Plus, Trash2, Check, Sparkles } from 'lucide-react';
 
 export default function LabelsPage() {
-  const { currentWorkspace } = useWorkspace();
-  const { user } = useAuth();
-  const [labels, setLabels] = useState([]);
-  const [selectedLabel, setSelectedLabel] = useState(null);
+  const { labelId } = useParams();
+  const { labels = [], tasks = [], addLabel } = useWorkspace();
+
+  const [selectedLabelId, setSelectedLabelId] = useState(labelId || null);
   const [newLabelName, setNewLabelName] = useState('');
-  const [newLabelColor, setNewLabelColor] = useState('#6366F1');
+  const [newLabelColor, setNewLabelColor] = useState('#E11D48');
   const [showCreate, setShowCreate] = useState(false);
-  const [editingLabel, setEditingLabel] = useState(null);
 
-  const labelApi = createLabelApi(user?.id);
+  const PRESET_COLORS = ['#E11D48', '#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#64748B'];
 
-  const fetchLabels = async () => {
-    if (!currentWorkspace) return;
-    try {
-      const res = await labelApi.getLabels(currentWorkspace.id);
-      if (res.success) {
-        setLabels(res.data);
-      }
-    } catch (err) {
-      console.error('Error fetching labels:', err);
-    }
-  };
+  const filteredTasks = useMemo(() => {
+    if (!selectedLabelId) return tasks;
+    return tasks.filter((t) => {
+      if (!Array.isArray(t.labels)) return false;
+      return t.labels.some((l) => (typeof l === 'object' ? String(l.id) === String(selectedLabelId) : String(l) === String(selectedLabelId)));
+    });
+  }, [tasks, selectedLabelId]);
 
-  useEffect(() => {
-    fetchLabels();
-  }, [currentWorkspace]);
-
-  const handleCreateLabel = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newLabelName.trim() || !currentWorkspace) return;
-
-    try {
-      const res = await labelApi.createLabel({
-        workspace_id: currentWorkspace.id,
-        name: newLabelName.trim(),
-        color: newLabelColor,
-      });
-
-      if (res.success) {
-        setNewLabelName('');
-        setShowCreate(false);
-        fetchLabels();
-      }
-    } catch (err) {
-      console.error('Error creating label:', err);
-    }
+    if (!newLabelName.trim()) return;
+    await addLabel(newLabelName.trim(), newLabelColor);
+    setNewLabelName('');
+    setShowCreate(false);
   };
-
-  const handleDeleteLabel = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this label?')) return;
-    try {
-      await labelApi.deleteLabel(id);
-      if (selectedLabel?.id === id) setSelectedLabel(null);
-      fetchLabels();
-    } catch (err) {
-      console.error('Error deleting label:', err);
-    }
-  };
-
-  const PRESET_COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#64748B'];
 
   return (
-    <div className="labels-page-container">
-      <div className="labels-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Tag size={24} style={{ color: 'var(--primary-color)' }} />
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Labels</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Tag className="w-5 h-5 text-[#E11D48]" />
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Labels</h1>
+          </div>
+          <p className="mt-1 text-xs text-neutral-500">Categorize, tag, and filter tasks across projects</p>
         </div>
-        <button 
-          className="primary-btn" 
+
+        <button
+          type="button"
           onClick={() => setShowCreate(!showCreate)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#E11D48] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#BE123C] transition-all cursor-pointer"
         >
-          <Plus size={16} /> Add Label
+          <Plus className="w-4 h-4" />
+          <span>New Label</span>
         </button>
       </div>
 
       {showCreate && (
-        <form className="label-form-card" onSubmit={handleCreateLabel} style={{
-          background: 'var(--card-bg, #ffffff)',
-          padding: '16px',
-          borderRadius: '12px',
-          border: '1px solid var(--border-color)',
-          marginBottom: '20px',
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}>
+        <form onSubmit={handleCreate} className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm flex flex-wrap items-center gap-3">
           <input
             type="text"
-            placeholder="Label name..."
+            required
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
-            style={{
-              flex: 1,
-              minWidth: '180px',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--input-bg)'
-            }}
-            required
+            placeholder="Label name..."
+            className="flex-1 min-w-[200px] text-xs p-2 rounded-xl border border-neutral-300 outline-none focus:border-[#E11D48]"
+            autoFocus
           />
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {PRESET_COLORS.map(color => (
-              <div
-                key={color}
-                onClick={() => setNewLabelColor(color)}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
-                  cursor: 'pointer',
-                  border: newLabelColor === color ? '2px solid var(--text-color)' : '2px solid transparent',
-                  transform: newLabelColor === color ? 'scale(1.15)' : 'scale(1)',
-                  transition: 'all 0.2s'
-                }}
+
+          <div className="flex items-center gap-1.5">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setNewLabelColor(c)}
+                className={`w-6 h-6 rounded-full cursor-pointer transition-transform ${
+                  newLabelColor === c ? 'scale-120 ring-2 ring-neutral-900' : ''
+                }`}
+                style={{ backgroundColor: c }}
               />
             ))}
           </div>
-          <button type="submit" className="primary-btn">Save</button>
-          <button type="button" className="secondary-btn" onClick={() => setShowCreate(false)}>Cancel</button>
+
+          <button
+            type="submit"
+            className="px-4 py-2 text-xs font-bold text-white bg-[#E11D48] hover:bg-[#BE123C] rounded-xl shadow-sm cursor-pointer"
+          >
+            Create Label
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreate(false)}
+            className="px-3 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-xl"
+          >
+            Cancel
+          </button>
         </form>
       )}
 
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
+      {/* Label Pills */}
+      <div className="flex flex-wrap items-center gap-2">
         <button
-          onClick={() => setSelectedLabel(null)}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '20px',
-            border: !selectedLabel ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
-            background: !selectedLabel ? 'var(--primary-light, rgba(99,102,241,0.1))' : 'var(--card-bg)',
-            color: !selectedLabel ? 'var(--primary-color)' : 'var(--text-color)',
-            cursor: 'pointer',
-            fontWeight: 500
-          }}
+          type="button"
+          onClick={() => setSelectedLabelId(null)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+            !selectedLabelId
+              ? 'bg-[#E11D48] text-white shadow-xs'
+              : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+          }`}
         >
           All Tasks
         </button>
 
-        {labels.map(l => (
-          <div
+        {labels.map((l) => (
+          <button
             key={l.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              border: selectedLabel?.id === l.id ? `2px solid ${l.color}` : '1px solid var(--border-color)',
-              background: selectedLabel?.id === l.id ? `${l.color}22` : 'var(--card-bg)',
-              cursor: 'pointer'
-            }}
-            onClick={() => setSelectedLabel(l)}
+            type="button"
+            onClick={() => setSelectedLabelId(l.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+              selectedLabelId === l.id
+                ? 'bg-neutral-900 text-white shadow-xs'
+                : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+            }`}
           >
-            <span style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: l.color
-            }} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{l.name}</span>
-            {l.task_count > 0 && (
-              <span style={{ fontSize: '0.75rem', opacity: 0.6, background: 'rgba(0,0,0,0.06)', padding: '2px 6px', borderRadius: '10px' }}>
-                {l.task_count}
-              </span>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteLabel(l.id);
-              }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5, padding: '2px', display: 'flex' }}
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
+            <span>{l.name}</span>
+          </button>
         ))}
       </div>
 
-      <TasksView
-        title={selectedLabel ? `Label: ${selectedLabel.name}` : 'All Labeled Tasks'}
-        filterType={selectedLabel ? 'label' : 'all'}
-        filterId={selectedLabel?.id}
-      />
+      <ListView tasks={filteredTasks} />
     </div>
   );
 }
