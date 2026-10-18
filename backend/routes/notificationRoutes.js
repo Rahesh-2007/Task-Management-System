@@ -8,5 +8,7 @@ router.use(authMiddleware);
 router.get('/', nc.getMyNotifications);
 router.patch('/read-all', nc.markAllAsRead);
 router.patch('/:id/read', nc.markAsRead);
+router.post('/check-deadlines', nc.checkDeadlines);
+router.post('/test-email', nc.sendTestDeadlineEmail);
 
 module.exports = router;

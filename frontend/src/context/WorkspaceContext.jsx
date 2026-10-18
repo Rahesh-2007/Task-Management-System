@@ -104,6 +104,9 @@ export function WorkspaceProvider({ children }) {
       if (notifsRes.status === 'fulfilled' && notifsRes.value?.data) {
         setNotifications(notifsRes.value.data);
       }
+
+      // Automatically trigger background deadline check to send email alerts for overdue tasks
+      notificationApi.checkDeadlines().catch(() => {});
     } catch (err) {
       console.error('[WorkspaceContext] Error loading resources:', err.message);
     } finally {

@@ -26,8 +26,10 @@ export default function TaskDetailModal() {
   const {
     activeTaskModal,
     setActiveTaskModal,
+    tasks = [],
     updateTask,
     deleteTask,
+    toggleTaskCompletion,
     members,
     currentUser,
     projects,
@@ -48,7 +50,7 @@ export default function TaskDetailModal() {
 
   if (!activeTaskModal) return null;
 
-  const task = activeTaskModal;
+  const task = tasks.find((t) => t.id === activeTaskModal.id) || activeTaskModal;
   const safeProjects = projects || [];
   const safeMembers = members || [];
   const safeSections = sections || [];
@@ -104,7 +106,8 @@ export default function TaskDetailModal() {
     e.preventDefault();
     if (!newLabelInput.trim()) return;
     const cleanLabel = newLabelInput.replace(/^@/, '').trim();
-    if (!task.labels?.includes(cleanLabel)) {
+    const existingNames = (task.labels || []).map((l) => (typeof l === 'object' ? l.name : l));
+    if (!existingNames.includes(cleanLabel)) {
       updateTask(task.id, {
         labels: [...(task.labels || []), cleanLabel],
       });
@@ -113,8 +116,14 @@ export default function TaskDetailModal() {
   };
 
   const handleRemoveLabel = (labelToRemove) => {
+    const targetId = typeof labelToRemove === 'object' ? labelToRemove.id : null;
+    const targetName = typeof labelToRemove === 'object' ? labelToRemove.name : labelToRemove;
     updateTask(task.id, {
-      labels: (task.labels || []).filter((l) => l !== labelToRemove),
+      labels: (task.labels || []).filter((l) => {
+        if (typeof l === 'object' && targetId) return l.id !== targetId;
+        const lName = typeof l === 'object' ? l.name : l;
+        return lName !== targetName;
+      }),
     });
   };
 
@@ -173,10 +182,25 @@ export default function TaskDetailModal() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mark as Completed Button */}
+            <button
+              type="button"
+              onClick={() => toggleTaskCompletion(task.id)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                task.completed
+                  ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+              }`}
+              title={task.completed ? 'Click to mark incomplete' : 'Click to mark as completed'}
+            >
+              <Check className={`w-3.5 h-3.5 stroke-[3] ${task.completed ? 'text-emerald-800' : 'text-white'}`} />
+              <span>{task.completed ? 'Completed' : 'Mark Complete'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => deleteTask(task.id)}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               title="Delete task"
             >
               <Trash2 className="w-4 h-4" />
@@ -184,7 +208,7 @@ export default function TaskDetailModal() {
             <button
               type="button"
               onClick={() => setActiveTaskModal(null)}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors"
+              className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -237,15 +261,32 @@ export default function TaskDetailModal() {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Left Column (Main content): Title, Description, Subtasks */}
               <div className="md:col-span-8 space-y-5">
-                {/* Title input */}
-                <div>
-                  <input
-                    type="text"
-                    value={task.title}
-                    onChange={handleTitleChange}
-                    className="w-full text-lg sm:text-xl font-bold text-neutral-900 border-none outline-none focus:ring-1 focus:ring-brand rounded px-1 -ml-1 placeholder:text-neutral-400"
-                    placeholder="Task title"
-                  />
+                {/* Title & Complete Checkbox */}
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleTaskCompletion(task.id)}
+                    className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
+                      task.completed
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                        : 'border-neutral-300 hover:border-emerald-500 hover:bg-emerald-50'
+                    }`}
+                    title={task.completed ? 'Mark incomplete' : 'Mark as completed'}
+                  >
+                    {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={task.title}
+                      onChange={handleTitleChange}
+                      className={`w-full text-lg sm:text-xl font-bold text-neutral-900 border-none outline-none focus:ring-1 focus:ring-brand rounded px-1 -ml-1 placeholder:text-neutral-400 ${
+                        task.completed ? 'line-through text-neutral-400' : ''
+                      }`}
+                      placeholder="Task title"
+                    />
+                  </div>
                 </div>
 
                 {/* Description input */}
@@ -506,21 +547,28 @@ export default function TaskDetailModal() {
                     Labels
                   </label>
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {task.labels?.map((label) => (
-                      <span
-                        key={label}
-                        className="px-2 py-0.5 rounded bg-neutral-200 text-neutral-800 text-[11px] font-mono flex items-center gap-1"
-                      >
-                        @{label}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLabel(label)}
-                          className="hover:text-red-500 font-bold"
+                    {task.labels?.map((label, idx) => {
+                      const labelName = typeof label === 'object' ? label?.name : label;
+                      const labelKey = typeof label === 'object' ? label?.id || label?.name || idx : `${label}_${idx}`;
+                      const labelColor = typeof label === 'object' ? label?.color : null;
+                      if (!labelName) return null;
+                      return (
+                        <span
+                          key={labelKey}
+                          style={labelColor ? { borderColor: `${labelColor}40`, color: labelColor, backgroundColor: `${labelColor}15` } : {}}
+                          className="px-2 py-0.5 rounded bg-neutral-100 text-neutral-800 text-[11px] font-medium flex items-center gap-1 border border-neutral-200"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
+                          @{labelName}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLabel(label)}
+                            className="hover:text-red-500 font-bold ml-0.5 cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
                   </div>
 
                   <form onSubmit={handleAddLabel} className="flex items-center gap-1">

@@ -169,14 +169,21 @@ export default function TaskCard({ task, isDragging = false }) {
             )}
 
             {/* Labels */}
-            {task.labels?.slice(0, 2).map((label) => (
-              <span
-                key={label}
-                className="text-[10px] px-1.5 py-0.2 rounded bg-neutral-100 text-neutral-600 font-mono"
-              >
-                @{label}
-              </span>
-            ))}
+            {task.labels?.slice(0, 2).map((label, idx) => {
+              const labelName = typeof label === 'object' ? label?.name : label;
+              const labelKey = typeof label === 'object' ? label?.id || label?.name || idx : `${label}_${idx}`;
+              const labelColor = typeof label === 'object' ? label?.color : null;
+              if (!labelName) return null;
+              return (
+                <span
+                  key={labelKey}
+                  style={labelColor ? { borderColor: `${labelColor}40`, color: labelColor, backgroundColor: `${labelColor}10` } : {}}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600 font-medium"
+                >
+                  @{labelName}
+                </span>
+              );
+            })}
 
             {/* Assignee Avatar (Far Right) */}
             {assignee && (

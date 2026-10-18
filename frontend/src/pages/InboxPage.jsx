@@ -14,10 +14,10 @@ export default function InboxPage() {
   const inboxTasks = useMemo(() => {
     if (!inboxProject) {
       // No inbox project — show tasks with no project as a safe fallback
-      return tasks.filter((t) => !t.completed && !t.projectId);
+      return tasks.filter((t) => !t.projectId);
     }
-    // Correct filter: ONLY tasks belonging to the inbox project
-    return tasks.filter((t) => !t.completed && String(t.projectId) === String(inboxProject.id));
+    // Correct filter: tasks belonging to the inbox project (both active & completed)
+    return tasks.filter((t) => String(t.projectId) === String(inboxProject.id));
   }, [tasks, inboxProject]);
 
 

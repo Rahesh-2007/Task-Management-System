@@ -115,19 +115,27 @@ app.use((err, req, res, next) => {
   });
 });
 
+const { startDeadlineScheduler, stopDeadlineScheduler } = require('./services/deadlineScheduler');
+
 // Start Server after database schema initialization
 async function startServer() {
   try {
     await initializeDatabase();
+    
+    // Start automated background task deadline checker & mailer
+    startDeadlineScheduler(60000); // checks every 60 seconds
+
     const server = app.listen(PORT, () => {
       console.log(`🚀 TaskFlow Backend running at http://localhost:${PORT}`);
       console.log(`🔒 Secured with Helmet, JWT Auth, and Rate Limiting`);
       console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📧 Automated Task Deadline Email alerts active`);
     });
 
     // Graceful shutdown on SIGTERM/SIGINT
     const shutdown = (signal) => {
       console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+      stopDeadlineScheduler();
       server.close(() => {
         console.log('[Server] HTTP server closed.');
         process.exit(0);

@@ -229,6 +229,12 @@ export const notificationApi = {
   async markAllAsRead() {
     return apiRequest('/notifications/read-all', { method: 'PATCH' });
   },
+  async checkDeadlines() {
+    return apiRequest('/notifications/check-deadlines', { method: 'POST' });
+  },
+  async sendTestDeadlineEmail() {
+    return apiRequest('/notifications/test-email', { method: 'POST' });
+  },
 };
 
 // 8. Team API (Meetings with Google Meet, Chat, Vacations, Activity Stream)

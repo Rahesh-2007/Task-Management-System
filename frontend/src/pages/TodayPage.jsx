@@ -10,16 +10,19 @@ export default function TodayPage({ filter = 'today' }) {
 
   const filteredTasks = useMemo(() => {
     if (filter === 'my_tasks') {
-      return tasks.filter((t) => !t.completed);
+      return tasks;
     }
     if (filter === 'important') {
-      return tasks.filter((t) => !t.completed && (t.priority === 'p1' || t.priority === 'p2'));
+      return tasks.filter((t) => t.priority === 'p1' || t.priority === 'p2');
     }
     if (filter === 'completed') {
       return tasks.filter((t) => t.completed);
     }
-    // Default: Today (Due today or overdue)
-    return tasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= todayStr);
+    // Default: Today (Due today, overdue, or completed)
+    return tasks.filter((t) => {
+      if (t.completed) return true;
+      return t.dueDate && t.dueDate <= todayStr;
+    });
   }, [tasks, filter, todayStr]);
 
   const pageTitle =

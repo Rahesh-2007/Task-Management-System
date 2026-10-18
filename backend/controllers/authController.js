@@ -172,6 +172,12 @@ exports.login = async (req, res) => {
       [user.id]
     );
 
+    // Asynchronously check for any overdue/due task deadlines for this logged-in user and dispatch emails
+    try {
+      const { checkAndNotifyDeadlines } = require('../services/deadlineScheduler');
+      checkAndNotifyDeadlines(user.id).catch(() => {});
+    } catch (_) {}
+
     return res.json({
       success: true,
       message: 'Logged in successfully.',
@@ -196,6 +202,12 @@ exports.getMe = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
+
+    // Trigger deadline check for active user in background
+    try {
+      const { checkAndNotifyDeadlines } = require('../services/deadlineScheduler');
+      checkAndNotifyDeadlines(req.user.id).catch(() => {});
+    } catch (_) {}
 
     const [workspaces] = await pool.query(
       `SELECT w.*, wm.role FROM workspaces w

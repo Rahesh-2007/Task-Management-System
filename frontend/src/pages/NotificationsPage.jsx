@@ -14,6 +14,10 @@ import {
   AlertCircle,
   ShieldCheck,
   Trash2,
+  Mail,
+  Send,
+  RefreshCw,
+  Zap,
 } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +35,8 @@ export default function NotificationsPage() {
   const [pendingInvites, setPendingInvites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+  const [isCheckingDeadlines, setIsCheckingDeadlines] = useState(false);
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
 
   const currentUserRole = members.find((m) => m.id === user?.id)?.role || 'member';
   const isAdminOrOwner = currentUserRole === 'admin' || currentUserRole === 'owner' || activeWorkspace?.owner_id === user?.id;
@@ -113,6 +119,47 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleCheckDeadlines = async () => {
+    try {
+      setIsCheckingDeadlines(true);
+      setStatusMsg({ type: '', text: '' });
+      const res = await notificationApi.checkDeadlines();
+      if (res.success) {
+        setStatusMsg({
+          type: 'success',
+          text: res.message || 'Deadline check finished. Email alerts dispatched for pending tasks!',
+        });
+        loadData();
+      } else {
+        setStatusMsg({ type: 'error', text: res.message || 'Failed to check deadlines.' });
+      }
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: err.message || 'Error triggering deadline check.' });
+    } finally {
+      setIsCheckingDeadlines(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    try {
+      setIsSendingTestEmail(true);
+      setStatusMsg({ type: '', text: '' });
+      const res = await notificationApi.sendTestDeadlineEmail();
+      if (res.success) {
+        setStatusMsg({
+          type: 'success',
+          text: `Sample deadline alert email successfully sent to ${user?.email || 'your registered email'}!`,
+        });
+      } else {
+        setStatusMsg({ type: 'error', text: res.message || 'Failed to send test email.' });
+      }
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: err.message || 'Error dispatching test email.' });
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
+
   // Filter pending approvals for admin
   const pendingVacationApprovals = vacations.filter((v) => v.status === 'pending');
   const myVacationRequests = vacations.filter((v) => v.user_id === user?.id);
@@ -135,7 +182,7 @@ export default function NotificationsPage() {
               )}
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Review team time-off approvals, meeting notices, and workspace invitations for {activeWorkspace?.name}.
+              Review team time-off approvals, meeting notices, workspace invitations, and automated deadline alerts.
             </p>
           </div>
         </div>
@@ -150,6 +197,51 @@ export default function NotificationsPage() {
               Mark all read
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Automated Task Deadline Email Dispatcher Card */}
+      <div className="rounded-3xl bg-gradient-to-r from-rose-50/80 via-white to-orange-50/80 p-5 shadow-sm border border-rose-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-sm flex-shrink-0 mt-0.5">
+            <Mail className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm font-bold text-neutral-900">Automated Deadline Email Alert System</h2>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active Monitor
+              </span>
+            </div>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              If an incomplete task reaches or passes its allotted deadline, an alert email is automatically dispatched to the assignee's login email (
+              <span className="font-semibold text-rose-700">{user?.email || 'your login email'}</span>).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0 self-start md:self-center flex-wrap">
+          <button
+            type="button"
+            onClick={handleSendTestEmail}
+            disabled={isSendingTestEmail}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-neutral-700 text-xs font-bold border border-neutral-300 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+            title="Send a sample deadline alert to your email"
+          >
+            {isSendingTestEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-600" /> : <Send className="w-3.5 h-3.5 text-rose-600" />}
+            <span>Test My Email</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCheckDeadlines}
+            disabled={isCheckingDeadlines}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isCheckingDeadlines ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+            <span>Scan Deadlines Now</span>
+          </button>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import {
   isToday,
   isTomorrow,
 } from 'date-fns';
-import { Plus, Calendar, Clock } from 'lucide-react';
+import { Plus, Calendar, Clock, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import TaskCard from './TaskCard';
 
@@ -21,6 +21,7 @@ export default function UpcomingView({ tasks: propTasks, project }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [inlineDayAdd, setInlineDayAdd] = useState(null);
   const [inlineTitle, setInlineTitle] = useState('');
+  const [showCompleted, setShowCompleted] = useState(true);
 
   // Next 7 days
   const today = new Date();
@@ -147,6 +148,40 @@ export default function UpcomingView({ tasks: propTasks, project }) {
             </div>
           );
         })}
+
+        {/* Completed Tasks Section at the bottom */}
+        {tasks.filter((t) => t.completed).length > 0 && (
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-2xs overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="w-full flex items-center justify-between p-4 bg-emerald-50/90 hover:bg-emerald-100/70 text-emerald-800 text-xs font-bold transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2">
+                {showCompleted ? (
+                  <ChevronDown className="w-4 h-4 stroke-[2.5] text-emerald-700" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 stroke-[2.5] text-emerald-700" />
+                )}
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Completed Tasks</span>
+              </div>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
+                {tasks.filter((t) => t.completed).length}
+              </span>
+            </button>
+
+            {showCompleted && (
+              <div className="p-4 space-y-2 bg-neutral-50/40">
+                {tasks
+                  .filter((t) => t.completed)
+                  .map((t) => (
+                    <TaskCard key={t.id} task={t} />
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

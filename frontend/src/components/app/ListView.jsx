@@ -5,6 +5,7 @@ import {
   Calendar,
   Sparkles,
   Plus,
+  CheckCircle2,
 } from 'lucide-react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import TaskCard from './TaskCard';
@@ -73,7 +74,9 @@ export default function ListView({ tasks = [], project }) {
 
   const getProjectBadge = (projId, labels = []) => {
     const proj = safeProjects.find((p) => p && p.id === projId);
-    const name = proj ? proj.name : (Array.isArray(labels) && labels[0] ? labels[0] : 'Work');
+    const rawLabel = Array.isArray(labels) && labels[0] ? labels[0] : null;
+    const labelStr = typeof rawLabel === 'object' ? rawLabel?.name : rawLabel;
+    const name = proj ? proj.name : (labelStr || 'General');
     const lower = (name || '').toLowerCase();
 
     if (lower.includes('work')) {
@@ -271,22 +274,28 @@ export default function ListView({ tasks = [], project }) {
 
       {/* 5. Completed Accordion Group */}
       {completedTasks.length > 0 && (
-        <div className="rounded-2xl border border-emerald-100 overflow-hidden shadow-2xs opacity-80">
+        <div className="rounded-2xl border border-emerald-200 overflow-hidden shadow-2xs">
           <button
             type="button"
             onClick={() => toggleGroup('completed')}
-            className="w-full flex items-center gap-2 px-4 py-2.5 bg-emerald-50/80 text-emerald-800 text-xs font-bold transition-colors cursor-pointer text-left"
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-emerald-50/90 hover:bg-emerald-100/80 text-emerald-800 text-xs font-bold transition-colors cursor-pointer text-left"
           >
-            {collapsedGroups.completed ? (
-              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-            ) : (
-              <ChevronDown className="w-4 h-4 stroke-[2.5]" />
-            )}
-            <span>Completed ({completedTasks.length})</span>
+            <div className="flex items-center gap-2">
+              {collapsedGroups.completed ? (
+                <ChevronRight className="w-4 h-4 stroke-[2.5] text-emerald-700" />
+              ) : (
+                <ChevronDown className="w-4 h-4 stroke-[2.5] text-emerald-700" />
+              )}
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Completed Tasks</span>
+            </div>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
+              {completedTasks.length}
+            </span>
           </button>
 
           {!collapsedGroups.completed && (
-            <div className="bg-white">
+            <div className="bg-white divide-y divide-neutral-100/60 opacity-90">
               {completedTasks.map((task) => renderTaskRow(task, false))}
             </div>
           )}

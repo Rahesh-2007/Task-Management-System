@@ -335,6 +335,17 @@ async function initializeDatabase() {
       console.log('[Database] Migration: Added tasks.reminder_sent_at');
     }
 
+    // Add tasks.deadline_email_sent_at if not present
+    const [deadlineEmailSentCol] = await pool.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tasks' AND COLUMN_NAME = 'deadline_email_sent_at'`,
+      [DB_NAME]
+    );
+    if (deadlineEmailSentCol.length === 0) {
+      await pool.query(`ALTER TABLE tasks ADD COLUMN deadline_email_sent_at DATETIME NULL`);
+      console.log('[Database] Migration: Added tasks.deadline_email_sent_at');
+    }
+
     // Ensure workspace_members.role ENUM includes 'owner'
     await pool.query(`ALTER TABLE workspace_members MODIFY COLUMN role ENUM('owner','admin','member') NOT NULL DEFAULT 'member'`).catch(() => {});
 
